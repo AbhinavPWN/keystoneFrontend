@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { SiFacebook, SiTiktok, SiInstagram } from 'react-icons/si'
+import { SiFacebook, SiTiktok  } from 'react-icons/si'
+import { MdEmail } from "react-icons/md";
 
 export default function Footer() {
   return (
@@ -40,16 +41,20 @@ export default function Footer() {
           <div className=''>
             <h3 className="text-lg font-semibold">Follow Us</h3>
             <div className="mt-2 flex gap-4">
-              <Link href="#" aria-label="Facebook" className="hover:text-orange-500 transition-transform duration-300 hover:scale-110">
+              <Link href="https://www.facebook.com/keystone2080" target='_blank' aria-label="Facebook" className="hover:text-orange-500 transition-transform duration-300 hover:scale-110">
                 <SiFacebook className="text-2xl" />
               </Link>
-              <Link href="#" aria-label="TikTok" className="hover:text-orange-500 transition-transform duration-300 hover:scale-110">
+              <Link href="https://www.tiktok.com/@keystonemultipurp?_t=ZS-8ySJX6sIRWP&_r=1" aria-label="TikTok" target='_blank' className="hover:text-orange-500 transition-transform duration-300 hover:scale-110">
                 <SiTiktok className="text-2xl" />
               </Link>
 
-              <Link href="#" aria-label="Instagram" className="hover:text-orange-500 transition-transform duration-300 hover:scale-110">
-                <SiInstagram className="text-2xl" />
-              </Link>
+              <Link
+                  href="mailto:kmcgroup2080@gmail.com"
+                  aria-label="Email"
+                  className="hover:text-orange-500 transition-transform duration-300 hover:scale-110" target='_blank'
+                >
+                  <MdEmail className="text-2xl" />
+                </Link>
             </div>
 
             <div className="mt-4">
