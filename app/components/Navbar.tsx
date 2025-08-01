@@ -80,7 +80,10 @@ export default function Navbar() {
     async function fetchDownloads() {
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_CMS_URL || "http://localhost:8080"}/api/downloads?populate=*`
+          `${process.env.NEXT_PUBLIC_CMS_URL || "http://localhost:8080"}/api/downloads?populate=*`,
+          {
+              headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_STRAPI_TOKEN}` },
+            }
         )
 
         if (!res.ok) throw new Error("Failed to fetch")

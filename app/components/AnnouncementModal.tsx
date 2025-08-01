@@ -59,7 +59,10 @@ export default function AnnouncementModal() {
     const fetchAnnouncement = async () => {
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_CMS_URL}/api/announcements?populate=image`
+          `${process.env.NEXT_PUBLIC_CMS_URL}/api/announcements?populate=image`,
+          {
+            headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_STRAPI_TOKEN}` },
+          }
         );
         if (!res.ok) throw new Error("Failed to fetch");
         const json = await res.json();
