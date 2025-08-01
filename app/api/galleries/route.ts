@@ -14,7 +14,7 @@
     }
 
     try {
-      const strapiUrl = `${process.env.STRAPI_API}/galleries?populate=*&pagination[page]=${page}&pagination[pageSize]=${pageSize}`;
+      const strapiUrl = `${process.env.STRAPI_API}/galleries?pagination[page]=${page}&pagination[pageSize]=${pageSize}&populate=Image`;
       const res = await fetch(strapiUrl, {
         headers: {
           Authorization: `Bearer ${process.env.STRAPI_TOKEN}`,

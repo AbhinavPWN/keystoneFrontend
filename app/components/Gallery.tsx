@@ -64,7 +64,7 @@
       setError(null);
 
       try {
-        const res = await fetch(`/api/galleries?pagination[page]=${page}&pagination[pageSize]=${pageSize}`, {
+        const res = await fetch(`/api/galleries?pagination[page]=${page}&pagination[pageSize]=${pageSize}&populate=Image`, {
           cache: "no-store",
         });
 
