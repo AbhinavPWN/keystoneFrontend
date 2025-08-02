@@ -20,6 +20,17 @@ export default function ContactInfo() {
             </a>
             </p>
 
+            {/* Landline */}
+            <p>
+              ☎️ <strong>Landline:</strong>{' '}
+              <a
+                href="tel:056-494476"
+                className="text-orange-500 hover:underline"
+              >
+                056-494476
+              </a>
+            </p>
+
             <p>
             📧 <strong>Email:</strong>{' '}
             <a href="mailto:info@keystone.com.np" className="text-orange-500 hover:underline">
