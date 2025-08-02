@@ -20,13 +20,13 @@ export default function AboutPreview() {
 
         {/* Right: Text */}
         <div className="space-y-4 order-1 md:order-2">
-          <h2 className="text-3xl font-bold font-playfair">
+          <h2 className="text-3xl font-bold font-[playfair]">
             About Keystone
           </h2>
-          <p className="leading-relaxed">
+          <p className="leading-relaxed text-justify font-[roboto]">
             <strong>Keystone Multipurpose Company Pvt. Ltd.</strong> is a trusted Nepali firm helping shareholders and investors grow their wealth by strategically investing in the stock market — both through short-term trading and long-term holdings.
           </p>
-          <p className="leading-relaxed">
+          <p className="leading-relaxed text-justify font-[roboto]">
             With a commitment to transparency and sustainable growth, Keystone also manages two Mahindra Scorpio vehicles under our travel & booking subsidiary, <strong>Key-Stone Travels & Tours Pvt. Ltd.</strong>, providing additional value to our stakeholders.
           </p>
           <Link
