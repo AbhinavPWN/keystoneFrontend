@@ -147,16 +147,15 @@ export default function Navbar() {
       <div className="relative max-w-screen-xl mx-auto px-4 flex justify-between items-center h-16">
         {/* Logo */}
         <Link href="/" className="absolute left-0 flex items-center h-full px-3">
-          <div className="relative w-30 h-16">
-            <Image
-              src="/Logo_keystone.png"
-              alt="Keystone Logo"
-              fill
-              className="object-contain"
-              priority
-              sizes="(max-width: 768px) 112px, 120px"
-            />
-          </div>
+          <Image
+            src="/Company_Logo.png"
+            alt="Keystone Logo"
+            width={664}
+            height={150}
+            priority
+            quality={100}
+            className="object-contain max-h-16 w-auto"
+          />
         </Link>
 
         {/* Desktop Links */}
@@ -271,16 +270,15 @@ export default function Navbar() {
           <div className="flex justify-between items-center mb-6">
             {/* Logo in mobile drawer */}
             <Link href="/" onClick={() => setMobileOpen(false)}>
-              <div className="relative w-28 h-8">
-                <Image
-                  src="/Logo_keystone.png"
-                  alt="Keystone Logo"
-                  fill
-                  className="object-contain"
-                  priority
-                  sizes="(max-width: 768px) 112px, 120px"
-                />
-              </div>
+              <Image
+                src="/Company_Logo.png"
+                alt="Keystone Logo"
+                width={265}
+                height={60}
+                priority
+                quality={100}
+                className="object-contain"
+              />
             </Link>
 
             <button
