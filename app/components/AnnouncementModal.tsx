@@ -98,6 +98,22 @@ export default function AnnouncementModal() {
     fetchAnnouncement();
   }, [pathname]);
 
+  // Close on Esc key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        closeModal();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
+  // Disable background scroll when modal is open
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
   }, [isOpen]);
@@ -116,13 +132,13 @@ export default function AnnouncementModal() {
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-[60] flex items-start justify-center bg-black/60 px-4 pt-24 md:pt-32"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className="bg-white rounded-xl p-6 md:p-8 max-w-lg md:max-w-2xl w-full text-center relative shadow-2xl"
+            className="bg-white rounded-xl p-6 md:p-8 w-full max-w-lg md:max-w-2xl text-center relative shadow-2xl overflow-y-auto max-h-screen my-8"
             initial={{ y: 50, opacity: 0, scale: 0.95 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 50, opacity: 0, scale: 0.95 }}
