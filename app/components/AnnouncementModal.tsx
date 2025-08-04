@@ -42,7 +42,6 @@ export default function AnnouncementModal() {
     const seen = sessionStorage.getItem("announcementShown");
     if (seen) return;
 
-    // ✅ Move fallbackAnnouncement inside useEffect
     const fallbackAnnouncement: AnnouncementData = {
       id: 0,
       title: "Welcome to Keystone!",
@@ -51,7 +50,7 @@ export default function AnnouncementModal() {
       ctaText: "Contact Us",
       ctaLink: "/#contact-info",
       image: {
-        url: "/fallback.jpg", // Put fallback.jpg in the public folder
+        url: "/fallback.jpg",
         alternativeText: "Fallback Announcement",
       },
     };
@@ -67,9 +66,7 @@ export default function AnnouncementModal() {
         if (!res.ok) throw new Error("Failed to fetch");
         const json = await res.json();
 
-        const activeAnnouncement = (json?.data as ApiAnnouncement[]).find(
-          (a) => a.active
-        );
+        const activeAnnouncement = (json?.data as ApiAnnouncement[]).find((a) => a.active);
 
         if (activeAnnouncement) {
           setAnnouncement({
@@ -87,14 +84,12 @@ export default function AnnouncementModal() {
               : undefined,
           });
         } else {
-          // No active announcement → use fallback
           setAnnouncement(fallbackAnnouncement);
         }
 
         setIsOpen(true);
       } catch (err) {
         console.warn("Failed to fetch announcement:", err);
-        // Server down → use fallback
         setAnnouncement(fallbackAnnouncement);
         setIsOpen(true);
       }
@@ -103,7 +98,6 @@ export default function AnnouncementModal() {
     fetchAnnouncement();
   }, [pathname]);
 
-  // ✅ Prevent background scroll when modal is open
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
   }, [isOpen]);
@@ -122,7 +116,7 @@ export default function AnnouncementModal() {
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 pt-12 md:pt-24"
+          className="fixed inset-0 z-[60] flex items-start justify-center bg-black/60 px-4 pt-24 md:pt-32"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
