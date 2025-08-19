@@ -67,11 +67,11 @@ export default function AnnouncementModal() {
             message: a.message || "",
             ctaText: a.ctaText || null,
             ctaLink: a.ctaLink
-              ? a.ctaLink.startsWith("http") // absolute URL
+              ? a.ctaLink.startsWith("http")
                 ? a.ctaLink
-                : a.ctaLink.startsWith("#") // internal anchor
+                : a.ctaLink.startsWith("#")
                 ? a.ctaLink
-                : `${process.env.NEXT_PUBLIC_CMS_URL}${a.ctaLink}` // relative file
+                : `${process.env.NEXT_PUBLIC_CMS_URL}${a.ctaLink}`
               : null,
             image: a.image
               ? {
@@ -108,6 +108,14 @@ export default function AnnouncementModal() {
       setIsOpen(false);
       setCurrentIndex(0);
       sessionStorage.setItem("announcementShown", "true");
+    }
+  };
+
+  const handleAnchorClick = (anchor: string) => {
+    const el = document.querySelector(anchor);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
+      closeModal();
     }
   };
 
@@ -166,16 +174,27 @@ export default function AnnouncementModal() {
 
             {/* CTA Button */}
             {ctaLink ? (
-              <motion.a
-                href={ctaLink}
-                target={ctaLink.startsWith("#") ? "_self" : "_blank"}
-                rel={ctaLink.startsWith("#") ? undefined : "noopener noreferrer"}
-                className="inline-block bg-orange-500 text-white px-4 py-2 md:px-6 md:py-3 rounded hover:bg-orange-600 transition text-sm md:text-base"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                {ctaText || (isVacancy ? "View PDF" : "Learn More")}
-              </motion.a>
+              ctaLink.startsWith("#") ? (
+                <motion.button
+                  onClick={() => handleAnchorClick(ctaLink)}
+                  className="inline-block bg-orange-500 text-white px-4 py-2 md:px-6 md:py-3 rounded hover:bg-orange-600 transition text-sm md:text-base"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {ctaText || "Go to Section"}
+                </motion.button>
+              ) : (
+                <motion.a
+                  href={ctaLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block bg-orange-500 text-white px-4 py-2 md:px-6 md:py-3 rounded hover:bg-orange-600 transition text-sm md:text-base"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {ctaText || (isVacancy ? "View PDF" : "Learn More")}
+                </motion.a>
+              )
             ) : (
               <span className="inline-block bg-gray-300 text-white px-4 py-2 md:px-6 md:py-3 rounded text-sm md:text-base cursor-not-allowed">
                 {isVacancy ? "No PDF Available" : "No Link Available"}
