@@ -67,9 +67,11 @@ export default function AnnouncementModal() {
             message: a.message || "",
             ctaText: a.ctaText || null,
             ctaLink: a.ctaLink
-              ? a.ctaLink.startsWith("http")
+              ? a.ctaLink.startsWith("http") // absolute URL
                 ? a.ctaLink
-                : `${process.env.NEXT_PUBLIC_CMS_URL}${a.ctaLink}`
+                : a.ctaLink.startsWith("#") // internal anchor
+                ? a.ctaLink
+                : `${process.env.NEXT_PUBLIC_CMS_URL}${a.ctaLink}` // relative file
               : null,
             image: a.image
               ? {
@@ -145,7 +147,7 @@ export default function AnnouncementModal() {
               ×
             </motion.button>
 
-            {/* Modal Content */}
+            {/* Image */}
             {imageUrl && (
               <div className="mb-4">
                 <Image
@@ -158,20 +160,26 @@ export default function AnnouncementModal() {
               </div>
             )}
 
+            {/* Title & Message */}
             <h2 className="text-xl md:text-2xl font-bold mb-2">{title}</h2>
             <p className="text-sm md:text-base text-gray-600 mb-4">{message}</p>
 
-            {ctaLink && (
+            {/* CTA Button */}
+            {ctaLink ? (
               <motion.a
                 href={ctaLink}
-                target="_blank"
-                rel="noopener noreferrer"
+                target={ctaLink.startsWith("#") ? "_self" : "_blank"}
+                rel={ctaLink.startsWith("#") ? undefined : "noopener noreferrer"}
                 className="inline-block bg-orange-500 text-white px-4 py-2 md:px-6 md:py-3 rounded hover:bg-orange-600 transition text-sm md:text-base"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
                 {ctaText || (isVacancy ? "View PDF" : "Learn More")}
               </motion.a>
+            ) : (
+              <span className="inline-block bg-gray-300 text-white px-4 py-2 md:px-6 md:py-3 rounded text-sm md:text-base cursor-not-allowed">
+                {isVacancy ? "No PDF Available" : "No Link Available"}
+              </span>
             )}
           </motion.div>
         </motion.div>
