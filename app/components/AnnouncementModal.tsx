@@ -44,19 +44,19 @@ export default function AnnouncementModal() {
     () => [
       {
         id: -1,
-        title: "Welcome to Our Site",
-        message: "Check out our latest updates and offerings!",
-        ctaText: "Learn More",
-        ctaLink: "/about",
+        title: "Vacancy Announcement",
+        message: "Check out our latest job openings!",
+        ctaText: "View PDF",
+        ctaLink: "https://api.keystonemc.com.np/uploads/_599cf5fd47.PDF",
         createdAt: new Date().toISOString(),
       },
       {
         id: -2,
         title: "Stay Updated",
         message: "Join our newsletter for the latest news and updates.",
-        ctaText: "Subscribe",
-        ctaLink: "/newsletter",
-        createdAt: new Date(Date.now() - 1000).toISOString(), // Slightly older than first fallback
+        ctaText: "Contact Us",
+        ctaLink: "/#contact-info", // Updated to direct to contact us section
+        createdAt: new Date(Date.now() - 1000).toISOString(),
       },
     ],
     [] // Empty dependency array since it's static
@@ -76,7 +76,7 @@ export default function AnnouncementModal() {
             headers: {
               Authorization: `Bearer ${process.env.NEXT_PUBLIC_STRAPI_TOKEN}`,
             },
-            cache: "no-store",
+            cache: "no-store", // Ensure fresh data
           }
         );
         if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
@@ -103,18 +103,8 @@ export default function AnnouncementModal() {
 
         console.log("Active Announcements:", activeAnnouncements); // Debug: Log filtered announcements
 
-        // Ensure at least two announcements (use fallbacks if needed)
-        let finalAnnouncements: AnnouncementData[] = activeAnnouncements;
-        if (activeAnnouncements.length === 0) {
-          console.log("No active announcements, using fallbacks"); // Debug
-          finalAnnouncements = fallbackAnnouncements;
-        } else if (activeAnnouncements.length === 1) {
-          console.log("Only one announcement, adding one fallback"); // Debug
-          finalAnnouncements = [
-            activeAnnouncements[0],
-            fallbackAnnouncements[0], // Add one fallback
-          ];
-        }
+        // Use API data primarily, fall back only if no active announcements
+        const finalAnnouncements: AnnouncementData[] = activeAnnouncements.length > 0 ? activeAnnouncements : fallbackAnnouncements;
 
         if (finalAnnouncements.length > 0) {
           const announcementHash = JSON.stringify(finalAnnouncements.map((a) => a.id));
@@ -134,7 +124,6 @@ export default function AnnouncementModal() {
         }
       } catch (err) {
         console.warn("Failed to fetch announcements, using fallbacks:", err);
-        // Use fallback announcements on error
         setAnnouncements(fallbackAnnouncements);
         setIsOpen(true);
         sessionStorage.setItem(
@@ -146,17 +135,15 @@ export default function AnnouncementModal() {
     };
 
     fetchAnnouncements();
-  }, [pathname, fallbackAnnouncements]); // Dependency array includes memoized fallbackAnnouncements
+  }, [pathname, fallbackAnnouncements]);
 
   const closeModal = () => {
     if (currentIndex < announcements.length - 1) {
-      // Go to next announcement
       setCurrentIndex((prev) => {
         console.log("Moving to next announcement, index:", prev + 1); // Debug
         return prev + 1;
       });
     } else {
-      // All announcements shown
       setIsOpen(false);
       setCurrentIndex(0); // Reset index for next session
       sessionStorage.setItem("announcementShown", "true");
@@ -173,9 +160,8 @@ export default function AnnouncementModal() {
   const { title, message, ctaText, ctaLink, image } = announcement;
   const imageUrl = image?.url ? getStrapiMedia(image.url) : null;
 
-  const isVacancy =
-    title?.toLowerCase().includes("vacancy") ||
-    ctaLink?.toLowerCase().endsWith(".pdf");
+  // Enhanced isVacancy check to specifically detect PDF links
+  const isVacancy = title?.toLowerCase().includes("vacancy") || (ctaLink?.toLowerCase().includes(".pdf") && ctaLink?.startsWith("http"));
 
   return (
     <AnimatePresence>
@@ -227,7 +213,11 @@ export default function AnnouncementModal() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-block bg-orange-500 text-white px-4 py-2 md:px-6 md:py-3 rounded hover:bg-orange-600 transition text-sm md:text-base"
-                    onClick={closeModal}
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    onClick={(e) => {
+                      closeModal();
+                      console.log("Vacancy CTA clicked, opening PDF:", ctaLink); // Debug
+                    }}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
