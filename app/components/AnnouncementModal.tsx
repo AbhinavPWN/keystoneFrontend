@@ -29,11 +29,15 @@ interface ApiAnnouncement {
     url: string;
     alternativeText?: string | null;
   };
+  attributes: {
+    createdAt: string;
+  };
 }
 
 export default function AnnouncementModal() {
   const pathname = usePathname();
-  const [announcement, setAnnouncement] = useState<AnnouncementData | null>(null);
+  const [announcements, setAnnouncements] = useState<AnnouncementData[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -42,91 +46,76 @@ export default function AnnouncementModal() {
     const seen = sessionStorage.getItem("announcementShown");
     if (seen) return;
 
-    const fallbackAnnouncement: AnnouncementData = {
-      id: 0,
-      title: "Welcome to Keystone!",
-      message:
-        "Our services are currently experiencing issues. Please check back later.",
-      ctaText: "Contact Us",
-      ctaLink: "/#contact-info",
-      image: {
-        url: "/fallback.jpg",
-        alternativeText: "Fallback Announcement",
-      },
-    };
-
-    const fetchAnnouncement = async () => {
+    const fetchAnnouncements = async () => {
       try {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_CMS_URL}/api/announcements?populate=image`,
           {
-            headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_STRAPI_TOKEN}` },
+            headers: {
+              Authorization: `Bearer ${process.env.NEXT_PUBLIC_STRAPI_TOKEN}`,
+            },
           }
         );
-        if (!res.ok) throw new Error("Failed to fetch");
+
+        if (!res.ok) throw new Error("Failed to fetch announcements");
+
         const json = await res.json();
 
-        const activeAnnouncement = (json?.data as ApiAnnouncement[]).find((a) => a.active);
+        const activeAnnouncements = (json?.data as ApiAnnouncement[]).filter(
+          (a) => a.active
+        );
 
-        if (activeAnnouncement) {
-          setAnnouncement({
-            id: activeAnnouncement.id,
-            title: activeAnnouncement.title,
-            message: activeAnnouncement.message,
-            ctaText: activeAnnouncement.ctaText,
-            ctaLink: activeAnnouncement.ctaLink,
-            image: activeAnnouncement.image
-              ? {
-                  url: activeAnnouncement.image.url,
-                  alternativeText:
-                    activeAnnouncement.image.alternativeText || null,
-                }
-              : undefined,
-          });
-        } else {
-          setAnnouncement(fallbackAnnouncement);
+        // Sort by recently added first
+        activeAnnouncements.sort(
+          (a, b) =>
+            new Date(b.attributes.createdAt).getTime() -
+            new Date(a.attributes.createdAt).getTime()
+        );
+
+        if (activeAnnouncements.length > 0) {
+          setAnnouncements(
+            activeAnnouncements.map((a) => ({
+              id: a.id,
+              title: a.title,
+              message: a.message,
+              ctaText: a.ctaText,
+              ctaLink: a.ctaLink,
+              image: a.image
+                ? {
+                    url: a.image.url,
+                    alternativeText: a.image.alternativeText || null,
+                  }
+                : undefined,
+            }))
+          );
+          setIsOpen(true);
         }
-
-        setIsOpen(true);
       } catch (err) {
-        console.warn("Failed to fetch announcement:", err);
-        setAnnouncement(fallbackAnnouncement);
-        setIsOpen(true);
+        console.warn("Failed to fetch announcements:", err);
       }
     };
 
-    fetchAnnouncement();
+    fetchAnnouncements();
   }, [pathname]);
 
-  // Close on Esc key
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        closeModal();
-      }
-    };
-    if (isOpen) {
-      window.addEventListener("keydown", handleKeyDown);
-    }
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen]);
-
-  // Disable background scroll when modal is open
-  useEffect(() => {
-    document.body.style.overflow = isOpen ? "hidden" : "";
-  }, [isOpen]);
-
   const closeModal = () => {
-    setIsOpen(false);
-    sessionStorage.setItem("announcementShown", "true");
+    if (currentIndex < announcements.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
+    } else {
+      setIsOpen(false);
+      sessionStorage.setItem("announcementShown", "true");
+    }
   };
 
-  if (!announcement) return null;
+  if (!isOpen || announcements.length === 0) return null;
 
+  const announcement = announcements[currentIndex];
   const { title, message, ctaText, ctaLink, image } = announcement;
   const imageUrl = image?.url ? getStrapiMedia(image.url) : null;
+
+  const isVacancy =
+    title?.toLowerCase().includes("vacancy") ||
+    ctaLink?.toLowerCase().endsWith(".pdf");
 
   return (
     <AnimatePresence>
@@ -138,7 +127,7 @@ export default function AnnouncementModal() {
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className="bg-white rounded-xl p-6 md:p-8 w-full max-w-lg md:max-w-2xl text-center relative shadow-2xl overflow-y-auto max-h-screen my-8"
+            className="bg-white rounded-xl p-6 md:p-8 w-full max-w-lg md:max-w-2xl text-center relative shadow-2xl overflow-y-auto max-h-[90vh] my-8"
             initial={{ y: 50, opacity: 0, scale: 0.95 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 50, opacity: 0, scale: 0.95 }}
@@ -154,34 +143,69 @@ export default function AnnouncementModal() {
               ×
             </motion.button>
 
-            {/* Image */}
-            {imageUrl && (
-              <div className="mb-4">
-                <Image
-                  src={imageUrl}
-                  alt={image?.alternativeText || "Announcement"}
-                  width={800}
-                  height={400}
-                  className="rounded-lg object-cover w-full max-h-[300px] md:max-h-[400px]"
-                />
-              </div>
-            )}
-
-            {/* Title & Message */}
-            <h2 className="text-lg md:text-2xl font-bold mb-2">{title}</h2>
-            <p className="text-sm md:text-base text-gray-600 mb-4">{message}</p>
-
-            {/* CTA Button */}
-            {ctaLink && (
-              <motion.a
-                href={ctaLink}
-                className="inline-block bg-orange-500 text-white px-4 py-2 md:px-6 md:py-3 rounded hover:bg-orange-600 transition text-sm md:text-base"
-                onClick={closeModal}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                {ctaText || "Learn More"}
-              </motion.a>
+            {/* Vacancy Layout vs Default Layout */}
+            {isVacancy ? (
+              <>
+                <h2 className="text-xl md:text-2xl font-bold mb-4">{title}</h2>
+                <p className="text-sm md:text-base text-gray-600 mb-4">
+                  {message}
+                </p>
+                {imageUrl && (
+                  <div className="mb-4">
+                    <Image
+                      src={imageUrl}
+                      alt={image?.alternativeText || "Vacancy Notice"}
+                      width={800}
+                      height={400}
+                      className="rounded-lg object-cover w-full max-h-[300px] md:max-h-[400px]"
+                    />
+                  </div>
+                )}
+                {ctaLink && (
+                  <motion.a
+                    href={ctaLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block bg-orange-500 text-white px-4 py-2 md:px-6 md:py-3 rounded hover:bg-orange-600 transition text-sm md:text-base"
+                    onClick={closeModal}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    {ctaText || "View PDF"}
+                  </motion.a>
+                )}
+              </>
+            ) : (
+              <>
+                {imageUrl && (
+                  <div className="mb-4">
+                    <Image
+                      src={imageUrl}
+                      alt={image?.alternativeText || "Announcement"}
+                      width={800}
+                      height={400}
+                      className="rounded-lg object-cover w-full max-h-[300px] md:max-h-[400px]"
+                    />
+                  </div>
+                )}
+                <h2 className="text-lg md:text-2xl font-bold mb-2">{title}</h2>
+                <p className="text-sm md:text-base text-gray-600 mb-4">
+                  {message}
+                </p>
+                {ctaLink && (
+                  <motion.a
+                    href={ctaLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block bg-orange-500 text-white px-4 py-2 md:px-6 md:py-3 rounded hover:bg-orange-600 transition text-sm md:text-base"
+                    onClick={closeModal}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    {ctaText || "Learn More"}
+                  </motion.a>
+                )}
+              </>
             )}
           </motion.div>
         </motion.div>
