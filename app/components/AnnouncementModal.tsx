@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import { getStrapiMedia } from "@/lib/getStrapiMedia";
 import { usePathname } from "next/navigation";
@@ -39,6 +39,7 @@ export default function AnnouncementModal() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
 
+  // Fetch announcements
   useEffect(() => {
     if (pathname !== "/") return;
 
@@ -101,7 +102,8 @@ export default function AnnouncementModal() {
     fetchAnnouncements();
   }, [pathname]);
 
-  const closeModal = () => {
+  // Close modal function
+  const closeModal = useCallback(() => {
     if (currentIndex < announcements.length - 1) {
       setCurrentIndex((prev) => prev + 1);
     } else {
@@ -109,8 +111,20 @@ export default function AnnouncementModal() {
       setCurrentIndex(0);
       sessionStorage.setItem("announcementShown", "true");
     }
-  };
+  }, [currentIndex, announcements.length]);
 
+  // ESC key handling
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) {
+        closeModal();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, closeModal]);
+
+  // Anchor link scrolling
   const handleAnchorClick = (anchor: string) => {
     const el = document.querySelector(anchor);
     if (el) {
