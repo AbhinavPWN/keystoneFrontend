@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import { getStrapiMedia } from "@/lib/getStrapiMedia";
 import { usePathname } from "next/navigation";
@@ -16,6 +16,7 @@ interface AnnouncementData {
     url: string;
     alternativeText?: string | null;
   };
+  createdAt?: string;
 }
 
 interface ApiAnnouncement {
@@ -29,9 +30,7 @@ interface ApiAnnouncement {
     url: string;
     alternativeText?: string | null;
   };
-  attributes: {
-    createdAt: string;
-  };
+  createdAt?: string;
 }
 
 export default function AnnouncementModal() {
@@ -40,74 +39,135 @@ export default function AnnouncementModal() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
 
-  useEffect(() => {
-    if (pathname !== "/") return;
+  // Memoize fallbackAnnouncements to prevent re-creation on every render
+  const fallbackAnnouncements = useMemo<AnnouncementData[]>(
+    () => [
+      {
+        id: -1,
+        title: "Welcome to Our Site",
+        message: "Check out our latest updates and offerings!",
+        ctaText: "Learn More",
+        ctaLink: "/about",
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: -2,
+        title: "Stay Updated",
+        message: "Join our newsletter for the latest news and updates.",
+        ctaText: "Subscribe",
+        ctaLink: "/newsletter",
+        createdAt: new Date(Date.now() - 1000).toISOString(), // Slightly older than first fallback
+      },
+    ],
+    [] // Empty dependency array since it's static
+  );
 
-    const seen = sessionStorage.getItem("announcementShown");
-    if (seen) return;
+  useEffect(() => {
+    if (pathname !== "/") {
+      console.log("Not on homepage, skipping fetch"); // Debug
+      return;
+    }
 
     const fetchAnnouncements = async () => {
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_CMS_URL}/api/announcements?populate=image`,
+          `${process.env.NEXT_PUBLIC_CMS_URL}/api/announcements?populate=image&sort=createdAt:desc`,
           {
             headers: {
               Authorization: `Bearer ${process.env.NEXT_PUBLIC_STRAPI_TOKEN}`,
             },
+            cache: "no-store",
           }
         );
-
-        if (!res.ok) throw new Error("Failed to fetch announcements");
+        if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
 
         const json = await res.json();
+        console.log("API Response:", json); // Debug: Log raw API response
 
-        const activeAnnouncements = (json?.data as ApiAnnouncement[]).filter(
-          (a) => a.active
-        );
+        const activeAnnouncements = (json?.data as ApiAnnouncement[])
+          .filter((a) => a.active)
+          .map((a) => ({
+            id: a.id,
+            title: a.title,
+            message: a.message,
+            ctaText: a.ctaText,
+            ctaLink: a.ctaLink,
+            image: a.image
+              ? {
+                  url: a.image.url,
+                  alternativeText: a.image.alternativeText || null,
+                }
+              : undefined,
+            createdAt: a.createdAt || new Date().toISOString(),
+          })) as AnnouncementData[]; // Explicitly cast to AnnouncementData[]
 
-        // Sort by recently added first
-        activeAnnouncements.sort(
-          (a, b) =>
-            new Date(b.attributes.createdAt).getTime() -
-            new Date(a.attributes.createdAt).getTime()
-        );
+        console.log("Active Announcements:", activeAnnouncements); // Debug: Log filtered announcements
 
-        if (activeAnnouncements.length > 0) {
-          setAnnouncements(
-            activeAnnouncements.map((a) => ({
-              id: a.id,
-              title: a.title,
-              message: a.message,
-              ctaText: a.ctaText,
-              ctaLink: a.ctaLink,
-              image: a.image
-                ? {
-                    url: a.image.url,
-                    alternativeText: a.image.alternativeText || null,
-                  }
-                : undefined,
-            }))
-          );
-          setIsOpen(true);
+        // Ensure at least two announcements (use fallbacks if needed)
+        let finalAnnouncements: AnnouncementData[] = activeAnnouncements;
+        if (activeAnnouncements.length === 0) {
+          console.log("No active announcements, using fallbacks"); // Debug
+          finalAnnouncements = fallbackAnnouncements;
+        } else if (activeAnnouncements.length === 1) {
+          console.log("Only one announcement, adding one fallback"); // Debug
+          finalAnnouncements = [
+            activeAnnouncements[0],
+            fallbackAnnouncements[0], // Add one fallback
+          ];
+        }
+
+        if (finalAnnouncements.length > 0) {
+          const announcementHash = JSON.stringify(finalAnnouncements.map((a) => a.id));
+          const storedHash = sessionStorage.getItem("announcementHash");
+
+          if (announcementHash !== storedHash) {
+            console.log("New announcements detected, showing modal"); // Debug
+            setAnnouncements(finalAnnouncements);
+            setIsOpen(true);
+            sessionStorage.setItem("announcementHash", announcementHash);
+            sessionStorage.removeItem("announcementShown"); // Reset to ensure modal shows
+          } else {
+            console.log("No new announcements, modal not shown"); // Debug
+          }
+        } else {
+          console.log("No announcements to show"); // Debug
         }
       } catch (err) {
-        console.warn("Failed to fetch announcements:", err);
+        console.warn("Failed to fetch announcements, using fallbacks:", err);
+        // Use fallback announcements on error
+        setAnnouncements(fallbackAnnouncements);
+        setIsOpen(true);
+        sessionStorage.setItem(
+          "announcementHash",
+          JSON.stringify(fallbackAnnouncements.map((a) => a.id))
+        );
+        sessionStorage.removeItem("announcementShown");
       }
     };
 
     fetchAnnouncements();
-  }, [pathname]);
+  }, [pathname, fallbackAnnouncements]); // Dependency array includes memoized fallbackAnnouncements
 
   const closeModal = () => {
     if (currentIndex < announcements.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
+      // Go to next announcement
+      setCurrentIndex((prev) => {
+        console.log("Moving to next announcement, index:", prev + 1); // Debug
+        return prev + 1;
+      });
     } else {
+      // All announcements shown
       setIsOpen(false);
+      setCurrentIndex(0); // Reset index for next session
       sessionStorage.setItem("announcementShown", "true");
+      console.log("All announcements shown, modal closed"); // Debug
     }
   };
 
-  if (!isOpen || announcements.length === 0) return null;
+  if (!isOpen || announcements.length === 0) {
+    console.log("Modal not shown: isOpen =", isOpen, "announcements =", announcements); // Debug
+    return null;
+  }
 
   const announcement = announcements[currentIndex];
   const { title, message, ctaText, ctaLink, image } = announcement;
@@ -127,7 +187,7 @@ export default function AnnouncementModal() {
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className="bg-white rounded-xl p-6 md:p-8 w-full max-w-lg md:max-w-2xl text-center relative shadow-2xl overflow-y-auto max-h-[90vh] my-8"
+            className="bg-white rounded-xl p-6 md:p-8 w-full max-w-lg md:max-w-2xl text-center relative shadow-2xl overflow-y-auto max-h-screen my-8"
             initial={{ y: 50, opacity: 0, scale: 0.95 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 50, opacity: 0, scale: 0.95 }}
