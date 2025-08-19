@@ -40,10 +40,7 @@ export default function AnnouncementModal() {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    if (pathname !== "/") {
-      console.log("Not on homepage, skipping fetch"); // Debug
-      return;
-    }
+    if (pathname !== "/") return;
 
     const fetchAnnouncements = async () => {
       try {
@@ -53,20 +50,14 @@ export default function AnnouncementModal() {
             headers: {
               Authorization: `Bearer ${process.env.NEXT_PUBLIC_STRAPI_TOKEN}`,
             },
-            cache: "no-store", // Ensure fresh data
+            cache: "no-store",
           }
         );
-        if (!res.ok) {
-          throw new Error(`Failed to fetch: ${res.status} - ${res.statusText}`);
-        }
+
+        if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
 
         const json = await res.json();
-        console.log("API Response:", json); // Debug: Log raw API response
-
-        if (!Array.isArray(json?.data)) {
-          console.warn("API response data is not an array:", json);
-          return; // No fallback, just exit if data is invalid
-        }
+        if (!Array.isArray(json?.data)) return;
 
         const activeAnnouncements = json.data
           .filter((a: ApiAnnouncement) => a.active)
@@ -75,7 +66,11 @@ export default function AnnouncementModal() {
             title: a.title || "",
             message: a.message || "",
             ctaText: a.ctaText || null,
-            ctaLink: a.ctaLink || null,
+            ctaLink: a.ctaLink
+              ? a.ctaLink.startsWith("http")
+                ? a.ctaLink
+                : `${process.env.NEXT_PUBLIC_CMS_URL}${a.ctaLink}`
+              : null,
             image: a.image
               ? {
                   url: a.image.url || "",
@@ -85,23 +80,16 @@ export default function AnnouncementModal() {
             createdAt: a.createdAt || new Date().toISOString(),
           })) as AnnouncementData[];
 
-        console.log("Active Announcements:", activeAnnouncements); // Debug: Log filtered announcements
-
         if (activeAnnouncements.length > 0) {
           const announcementHash = JSON.stringify(activeAnnouncements.map((a) => a.id));
           const storedHash = sessionStorage.getItem("announcementHash");
 
           if (announcementHash !== storedHash) {
-            console.log("New announcements detected, showing modal"); // Debug
             setAnnouncements(activeAnnouncements);
             setIsOpen(true);
             sessionStorage.setItem("announcementHash", announcementHash);
-            sessionStorage.removeItem("announcementShown"); // Reset to ensure modal shows
-          } else {
-            console.log("No new announcements, modal not shown"); // Debug
+            sessionStorage.removeItem("announcementShown");
           }
-        } else {
-          console.log("No active announcements to show"); // Debug
         }
       } catch (err) {
         console.warn("Failed to fetch announcements:", err);
@@ -113,29 +101,23 @@ export default function AnnouncementModal() {
 
   const closeModal = () => {
     if (currentIndex < announcements.length - 1) {
-      setCurrentIndex((prev) => {
-        console.log("Moving to next announcement, index:", prev + 1); // Debug
-        return prev + 1;
-      });
+      setCurrentIndex((prev) => prev + 1);
     } else {
       setIsOpen(false);
-      setCurrentIndex(0); // Reset index for next session
+      setCurrentIndex(0);
       sessionStorage.setItem("announcementShown", "true");
-      console.log("All announcements shown, modal closed"); // Debug
     }
   };
 
-  if (!isOpen || announcements.length === 0) {
-    console.log("Modal not shown: isOpen =", isOpen, "announcements =", announcements); // Debug
-    return null;
-  }
+  if (!isOpen || announcements.length === 0) return null;
 
   const announcement = announcements[currentIndex];
   const { title, message, ctaText, ctaLink, image } = announcement;
   const imageUrl = image?.url ? getStrapiMedia(image.url) : null;
 
-  // Enhanced isVacancy check to specifically detect PDF links
-  const isVacancy = !!ctaLink && (title?.toLowerCase().includes("vacancy") || (ctaLink.toLowerCase().includes(".pdf") && ctaLink.startsWith("http")));
+  const isVacancy =
+    !!ctaLink &&
+    (title?.toLowerCase().includes("vacancy") || ctaLink.toLowerCase().endsWith(".pdf"));
 
   return (
     <AnimatePresence>
@@ -163,72 +145,33 @@ export default function AnnouncementModal() {
               ×
             </motion.button>
 
-            {/* Vacancy Layout vs Default Layout */}
-            {isVacancy ? (
-              <>
-                <h2 className="text-xl md:text-2xl font-bold mb-4">{title}</h2>
-                <p className="text-sm md:text-base text-gray-600 mb-4">
-                  {message}
-                </p>
-                {imageUrl && (
-                  <div className="mb-4">
-                    <Image
-                      src={imageUrl}
-                      alt={image?.alternativeText || "Vacancy Notice"}
-                      width={800}
-                      height={400}
-                      className="rounded-lg object-cover w-full max-h-[300px] md:max-h-[400px]"
-                    />
-                  </div>
-                )}
-                {ctaLink && (
-                  <motion.a
-                    href={ctaLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block bg-orange-500 text-white px-4 py-2 md:px-6 md:py-3 rounded hover:bg-orange-600 transition text-sm md:text-base"
-                    onClick={() => {
-                      closeModal();
-                      console.log("Vacancy CTA clicked, opening PDF:", ctaLink); // Debug
-                    }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    {ctaText || "View PDF"}
-                  </motion.a>
-                )}
-              </>
-            ) : (
-              <>
-                {imageUrl && (
-                  <div className="mb-4">
-                    <Image
-                      src={imageUrl}
-                      alt={image?.alternativeText || "Announcement"}
-                      width={800}
-                      height={400}
-                      className="rounded-lg object-cover w-full max-h-[300px] md:max-h-[400px]"
-                    />
-                  </div>
-                )}
-                <h2 className="text-lg md:text-2xl font-bold mb-2">{title}</h2>
-                <p className="text-sm md:text-base text-gray-600 mb-4">
-                  {message}
-                </p>
-                {ctaLink && (
-                  <motion.a
-                    href={ctaLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block bg-orange-500 text-white px-4 py-2 md:px-6 md:py-3 rounded hover:bg-orange-600 transition text-sm md:text-base"
-                    onClick={closeModal}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    {ctaText || "Learn More"}
-                  </motion.a>
-                )}
-              </>
+            {/* Modal Content */}
+            {imageUrl && (
+              <div className="mb-4">
+                <Image
+                  src={imageUrl}
+                  alt={image?.alternativeText || "Announcement"}
+                  width={800}
+                  height={400}
+                  className="rounded-lg object-cover w-full max-h-[300px] md:max-h-[400px]"
+                />
+              </div>
+            )}
+
+            <h2 className="text-xl md:text-2xl font-bold mb-2">{title}</h2>
+            <p className="text-sm md:text-base text-gray-600 mb-4">{message}</p>
+
+            {ctaLink && (
+              <motion.a
+                href={ctaLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block bg-orange-500 text-white px-4 py-2 md:px-6 md:py-3 rounded hover:bg-orange-600 transition text-sm md:text-base"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {ctaText || (isVacancy ? "View PDF" : "Learn More")}
+              </motion.a>
             )}
           </motion.div>
         </motion.div>
