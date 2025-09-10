@@ -6,15 +6,15 @@ import Footer from "./Footer";
 
 export default function NavbarFooterWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-
-  // Detect if current route is admin
   const isAdminRoute = pathname.startsWith("/keystone-admin");
 
+  // Wrap with flex column to push footer to bottom
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       {!isAdminRoute && <Navbar />}
-      {children}
+      {/* main content grows to fill remaining space */}
+      <div className="flex-grow">{children}</div>
       {!isAdminRoute && <Footer />}
-    </>
+    </div>
   );
 }

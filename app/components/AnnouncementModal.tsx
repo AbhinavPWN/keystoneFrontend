@@ -6,16 +6,20 @@ import { getStrapiMedia } from "@/lib/getStrapiMedia";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Strapi Image type
+interface StrapiImage {
+  url: string;
+  alternativeText?: string; // TS-safe
+  formats?: Record<string, { url: string }>;
+}
+
 interface AnnouncementData {
   id: number;
   title: string;
   message: string;
   ctaText?: string | null;
   ctaLink?: string | null;
-  image?: {
-    url: string;
-    alternativeText?: string | null;
-  } | null;
+  image?: StrapiImage | null;
   createdAt?: string | null;
 }
 
@@ -26,12 +30,12 @@ interface ApiAnnouncement {
   message: string;
   ctaText?: string | null;
   ctaLink?: string | null;
-  image?: {
-    url: string;
-    alternativeText?: string | null;
-  } | null;
+  image?: StrapiImage | null;
   createdAt?: string | null;
 }
+
+// Global ESC handler stack for modal priority
+const escHandlerStack: Set<(e: KeyboardEvent) => void> = new Set();
 
 export default function AnnouncementModal() {
   const pathname = usePathname();
@@ -39,7 +43,7 @@ export default function AnnouncementModal() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
 
-  // Fetch announcements
+  // Fetch announcements on homepage
   useEffect(() => {
     if (pathname !== "/") return;
 
@@ -68,17 +72,12 @@ export default function AnnouncementModal() {
             message: a.message || "",
             ctaText: a.ctaText || null,
             ctaLink: a.ctaLink
-              ? a.ctaLink.startsWith("http")
-                ? a.ctaLink
-                : a.ctaLink.startsWith("#")
+              ? a.ctaLink.startsWith("http") || a.ctaLink.startsWith("#")
                 ? a.ctaLink
                 : `${process.env.NEXT_PUBLIC_CMS_URL}${a.ctaLink}`
               : null,
             image: a.image
-              ? {
-                  url: a.image.url || "",
-                  alternativeText: a.image.alternativeText || null,
-                }
+              ? { ...a.image, alternativeText: a.image.alternativeText || undefined }
               : null,
             createdAt: a.createdAt || new Date().toISOString(),
           })) as AnnouncementData[];
@@ -113,15 +112,24 @@ export default function AnnouncementModal() {
     }
   }, [currentIndex, announcements.length]);
 
-  // ESC key handling
+  // ESC key handling with priority stack
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
         closeModal();
+        e.stopImmediatePropagation(); // prevent other ESC handlers
       }
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+
+    if (isOpen) {
+      escHandlerStack.add(handleEsc);
+      window.addEventListener("keydown", handleEsc, true); // capture phase
+    }
+
+    return () => {
+      escHandlerStack.delete(handleEsc);
+      window.removeEventListener("keydown", handleEsc, true);
+    };
   }, [isOpen, closeModal]);
 
   // Anchor link scrolling
@@ -137,7 +145,8 @@ export default function AnnouncementModal() {
 
   const announcement = announcements[currentIndex];
   const { title, message, ctaText, ctaLink, image } = announcement;
-  const imageUrl = image?.url ? getStrapiMedia(image.url) : null;
+
+  const imageUrl = image ? getStrapiMedia(image) : null;
 
   const isVacancy =
     !!ctaLink &&
@@ -178,6 +187,7 @@ export default function AnnouncementModal() {
                   width={800}
                   height={400}
                   className="rounded-lg object-cover w-full max-h-[300px] md:max-h-[400px]"
+                  unoptimized
                 />
               </div>
             )}

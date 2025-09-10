@@ -1,5 +1,10 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/* Text Layer styles (selectable text) */
+@import 'react-pdf/dist/Page/TextLayer.css';
+
+/* Annotation Layer styles (links, highlights, etc.) */
+@import 'react-pdf/dist/Page/AnnotationLayer.css';
 
 @custom-variant dark (&:is(.dark *));
 
