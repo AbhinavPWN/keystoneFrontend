@@ -57,23 +57,28 @@ export default function NoticeDetail({ params: paramsPromise }: Props) {
   if (!notice) {
     return <p className="text-center mt-12 text-gray-500">Loading...</p>;
   }
-
+console.log("DEBUG - notice.thumbnail:", JSON.stringify(notice.thumbnail, null, 2));
   return (
     <div className="max-w-screen-lg mx-auto px-4 py-16">
       <h1 className="text-4xl font-bold mb-2 text-[#0B1E36] font-[playfair]">{notice.title}</h1>
       <p className="text-sm text-gray-500 mb-6">
         {new Date(notice.date).toLocaleDateString('en-GB')}
       </p>
+      
       {notice.thumbnail && (
-        <Image
-          src={getStrapiMedia(notice.thumbnail.url)}
-          alt={notice.thumbnail.alternativeText || notice.title}
-          width={1200}
-          height={400}
-          className="w-full h-64 md:h-80 lg:h-96 object-cover rounded-2xl mb-8"
-          priority
-        />
-      )}
+  <Image
+    src={getStrapiMedia(notice.thumbnail)} // Changed: removed .url
+    alt={notice.thumbnail.alternativeText || notice.title}
+    width={1200}
+    height={400}
+    className="w-full h-64 md:h-80 lg:h-96 object-cover rounded-2xl mb-8"
+    priority
+    onError={() => {
+      console.error("Image failed to load:", getStrapiMedia(notice.thumbnail));
+      console.log("Raw thumbnail data:", notice.thumbnail);
+    }}
+  />
+)}
       <div className="prose max-w-full text-gray-700 mb-8">
         {notice.content.map((block, index) => (
           <p key={index}>

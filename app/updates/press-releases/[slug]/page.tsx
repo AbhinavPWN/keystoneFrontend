@@ -8,6 +8,7 @@ import {
   mapStrapiPressRelease,
 } from "@/lib/mapStrapiPressRelease";
 import Image from "next/image";
+import React from "react";
 
 async function getPressRelease(slug: string): Promise<StrapiPressRelease | null> {
   const res = await fetch(
@@ -21,12 +22,10 @@ async function getPressRelease(slug: string): Promise<StrapiPressRelease | null>
   }
 
   const data = await res.json();
-
   if (!data?.data?.length) return null;
 
   try {
-    const mapped = mapStrapiPressRelease(data.data[0] as StrapiResponseItem);
-    return mapped;
+    return mapStrapiPressRelease(data.data[0] as StrapiResponseItem);
   } catch (err) {
     console.error("Mapping error:", err);
     return null;
@@ -36,10 +35,11 @@ async function getPressRelease(slug: string): Promise<StrapiPressRelease | null>
 export default async function PressReleasePage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
-  const pressRelease = await getPressRelease(params.slug);
+  const { slug } = await params;
 
+  const pressRelease = await getPressRelease(slug);
   if (!pressRelease) return notFound();
 
   return (
@@ -51,18 +51,18 @@ export default async function PressReleasePage({
       </p>
 
       {/* Tags */}
-      {pressRelease.tags && pressRelease.tags.length > 0 && (
-        <div className="flex gap-2 mb-6 flex-wrap">
-          {pressRelease.tags.map((tag) => (
-            <span
-              key={tag.id}
-              className="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full"
-            >
-              {tag.name}
-            </span>
-          ))}
-        </div>
-      )}
+          {pressRelease.tags?.length ? (
+      <div className="flex gap-2 mb-6 flex-wrap">
+        {pressRelease.tags.map((tag) => (
+          <span
+            key={tag.id}
+            className="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full"
+          >
+            {tag.name}
+          </span>
+        ))}
+      </div>
+    ) : null}
 
       {/* Content */}
       {pressRelease.content?.length > 0 && (
@@ -80,17 +80,17 @@ export default async function PressReleasePage({
       {/* Thumbnail */}
       {pressRelease.thumbnail?.url && (
         <div className="relative w-full max-w-3xl h-64 md:h-96 mb-8">
-            <Image
+          <Image
             src={pressRelease.thumbnail.url}
             alt={pressRelease.thumbnail.alternativeText || pressRelease.title}
             fill
             className="rounded-xl shadow object-cover"
             priority
-            />
+          />
         </div>
-        )}
+      )}
 
-      {/* Attachments (reuses Notice viewer) */}
+      {/* Attachments */}
       <AttachmentViewer attachments={pressRelease.attachments} />
     </article>
   );

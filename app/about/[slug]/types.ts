@@ -1,13 +1,14 @@
-// app/[slug]/types.ts
+// app/about/[slug]/types.ts
 export type NormalizedStrapiImage = {
   url: string;
   alternativeText?: string | null;
   formats?: Record<string, { url: string }>;
 };
+
 // ---------------- Rich Text ----------------
 export type RichTextNode = {
-  type: string;
-  children: { text: string; type: string }[];
+  type: string; // Changed from "paragraph" to string
+  children: { text: string; type: string }[]; // Changed from "text" to string
 };
 
 // ---------------- Media ----------------
@@ -28,7 +29,6 @@ export type Commitment = {
 export type Investment = {
   id: number;
   title: string;
-  description?: RichTextNode[];
   logo?: string; // normalized string after fetching
   url?: string;
 };
@@ -80,7 +80,7 @@ export interface CompanyData {
     id: number;
     documentId?: string;
     Name?: string;
-    Bio?: RichTextNode[] | null;
+    Bio?: string | RichTextNode[] | null; // Keep flexible for API
     position?: { title: string } | string;
     Image?: StrapiImage;
     companies?: Array<{ id: number; slug: string }>; // Simplified relation
@@ -96,7 +96,7 @@ export interface CompanyData {
   investments?: Array<{
     id: number;
     title?: string;
-    description?: RichTextNode[];
+    description?: string | RichTextNode[] | undefined; // Keep for API compatibility, but ignored
     logo?: StrapiImage;
     url?: string;
   }>;

@@ -1,4 +1,5 @@
-// app/[slug]/AboutUsContent.tsx
+// app/about/[slug]/AboutUsContent.tsx
+
 import AboutUs from "@/app/components/AboutUs";
 import {
   AboutContent,
@@ -8,6 +9,7 @@ import {
   CompanyData,
   StrapiImage,
   StrapiResponse,
+  RichTextNode,
 } from "./types";
 
 type Props = { slug: string };
@@ -25,6 +27,36 @@ function getStrapiImageUrl(image?: StrapiImage | string): string {
   if ("data" in image && image.data?.attributes?.url) return image.data.attributes.url;
 
   return "/default-avatar.png";
+}
+
+// ---------------- Helper: Normalize Bio to RichTextNode[] | null ----------------
+function normalizeBio(bio?: string | RichTextNode[] | null): RichTextNode[] | null {
+  if (!bio) return null;
+  
+  if (typeof bio === "string") {
+    // Convert string to RichTextNode[]
+    return [
+      {
+        type: "paragraph" as const,
+        children: [{ text: bio, type: "text" as const }],
+      },
+    ];
+  }
+  
+  // If it's already an array, ensure it has the correct structure
+  if (Array.isArray(bio)) {
+    return bio.map(node => ({
+      type: "paragraph" as const,
+      children: Array.isArray(node.children) 
+        ? node.children.map(child => ({
+            text: typeof child === 'string' ? child : (child.text || ''),
+            type: "text" as const,
+          }))
+        : [{ text: '', type: "text" as const }],
+    }));
+  }
+  
+  return null;
 }
 
 export default async function AboutUsContent({ slug }: Props) {
@@ -75,7 +107,7 @@ export default async function AboutUsContent({ slug }: Props) {
       name: member.Name || "Unknown",
       position:
         typeof member.position === "object" ? member.position?.title || "Unknown" : member.position || "Unknown",
-      bio: (member.Bio || []) as BoardMember["bio"],
+      bio: normalizeBio(member.Bio),
       image: getStrapiImageUrl(member.Image || ""),
     }));
 
@@ -91,7 +123,6 @@ export default async function AboutUsContent({ slug }: Props) {
     investments = (companyData.investments || []).map((inv) => ({
       id: inv.id,
       title: inv.title || "Unknown",
-      description: (inv.description || []) as Investment["description"],
       logo: getStrapiImageUrl(inv.logo),
       url: inv.url || "",
     }));
