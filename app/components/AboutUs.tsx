@@ -196,7 +196,7 @@ console.log("DEBUG - aboutContent.image:", JSON.stringify(aboutContent?.image, n
                   </div>
                   <h3 className="text-lg font-semibold">{member.name}</h3>
                   <p className="text-orange-500">{member.position}</p>
-                  {renderRichText(member.bio)}
+                  
                 </Link>
               ))}
             </div>
