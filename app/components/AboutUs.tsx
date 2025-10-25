@@ -253,8 +253,15 @@ export default function AboutUs({
               <h3 className="text-xl font-semibold">{infoOfficer.name}</h3>
               <p className="text-orange-500 mb-2">{infoOfficer.position}</p>
               <p className="text-gray-700 dark:text-gray-300">
-                Contact: <span className="font-medium">+977-9800000000</span>
+                Contact:{" "}
+                <a
+                  href="tel:+9779769385494"
+                  className="font-medium text-blue-600 hover:underline"
+                >
+                  +977-9769385494
+                </a>
               </p>
+
             </div>
           ) : (
             <p className="text-gray-500 italic">Information Officer details not available.</p>
