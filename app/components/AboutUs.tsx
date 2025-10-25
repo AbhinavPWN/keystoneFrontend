@@ -65,7 +65,7 @@ export default function AboutUs({
 
   // ✅ Separate filtering logic
   const boardOnly = boardMembers.filter((m) =>
-    ["Chairperson", "Managing Director", "Director"].includes(m.position)
+    ["Chairman", "Managing Director", "Director"].includes(m.position)
   );
 
   const infoOfficer = boardMembers.find(
@@ -232,7 +232,7 @@ export default function AboutUs({
         </section>
       )}
 
-      {/* ✅ Information Officer */}
+      {/* ✅ Information Officer */}  
       <section className="py-16 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
         <div className="max-w-screen-md mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold font-[playfair] mb-6">
