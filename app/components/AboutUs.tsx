@@ -15,7 +15,12 @@ import { getStrapiMedia } from "@/lib/getStrapiMedia";
 
 /** Render rich text (Bio) */
 function renderRichText(bio?: RichTextNode[] | null) {
-  if (!bio || bio.length === 0) return <p className="mt-2 italic text-gray-600 dark:text-gray-400">No bio available.</p>;
+  if (!bio || bio.length === 0)
+    return (
+      <p className="mt-2 italic text-gray-600 dark:text-gray-400">
+        No bio available.
+      </p>
+    );
   return (
     <div className="space-y-2 mt-4 text-justify font-[roboto]">
       {bio.map((node, idx) => {
@@ -57,9 +62,23 @@ export default function AboutUs({
       </main>
     );
   }
-console.log("DEBUG - aboutContent.image:", JSON.stringify(aboutContent?.image, null, 2));
+
+  // ✅ Separate filtering logic
+  const boardOnly = boardMembers.filter((m) =>
+    ["Chairperson", "Managing Director", "Director"].includes(m.position)
+  );
+
+  const infoOfficer = boardMembers.find(
+    (m) =>
+      m.position &&
+      m.position.toLowerCase().includes("information officer")
+  );
+
+  console.log("DEBUG - aboutContent.image:", JSON.stringify(aboutContent?.image, null, 2));
+
   return (
     <main className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-50 font-[roboto]">
+
       {/* Hero */}
       {aboutContent?.heroText?.length && (
         <section className="relative bg-[#0B1E36] dark:bg-gray-800 text-white py-20 text-center">
@@ -68,12 +87,14 @@ console.log("DEBUG - aboutContent.image:", JSON.stringify(aboutContent?.image, n
           </h1>
           <div className="mt-4 text-lg max-w-2xl mx-auto font-[roboto] space-y-2">
             {aboutContent.heroText.map((block: RichTextNode, idx: number) =>
-              block.children?.map((child, i) => <p key={`${idx}-${i}`}>{child.text}</p>)
+              block.children?.map((child, i) => (
+                <p key={`${idx}-${i}`}>{child.text}</p>
+              ))
             )}
           </div>
         </section>
       )}
-      
+
       {/* Story & Image */}
       {(aboutContent?.story?.length || aboutContent?.image) && (
         <section className="py-16 bg-gray-50 dark:bg-gray-900">
@@ -84,7 +105,10 @@ console.log("DEBUG - aboutContent.image:", JSON.stringify(aboutContent?.image, n
                 {aboutContent.story.map((block: RichTextNode, idx: number) => {
                   if (block.type === "paragraph") {
                     return (
-                      <p key={idx} className="leading-relaxed text-justify font-[roboto]">
+                      <p
+                        key={idx}
+                        className="leading-relaxed text-justify font-[roboto]"
+                      >
                         {block.children.map((c) => c.text).join(" ")}
                       </p>
                     );
@@ -94,25 +118,26 @@ console.log("DEBUG - aboutContent.image:", JSON.stringify(aboutContent?.image, n
               </div>
             )}
 
-            {/* Image - Fixed to use getStrapiMedia with proper type handling */}
+            {/* Image */}
             {aboutContent?.image && (
-  <div className="order-1 md:order-2 max-w-[400px] mx-auto">
-    <Image
-      src={getStrapiMedia(aboutContent.image, "medium")}
-      alt={aboutContent.title || "About image"}
-      width={400}
-      height={240}
-      className="rounded-lg shadow-lg w-full h-auto"
-      priority
-      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
-      onError={(e) => {
-        console.error("Image failed to load:", getStrapiMedia(aboutContent.image, "medium"));
-        console.log("Raw image data:", aboutContent.image);
-      }}
-    />
-  </div>
-)}
-
+              <div className="order-1 md:order-2 max-w-[400px] mx-auto">
+                <Image
+                  src={getStrapiMedia(aboutContent.image, "medium")}
+                  alt={aboutContent.title || "About image"}
+                  width={400}
+                  height={240}
+                  className="rounded-lg shadow-lg w-full h-auto"
+                  priority
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
+                  onError={(e) => {
+                    console.error(
+                      "Image failed to load:",
+                      getStrapiMedia(aboutContent.image, "medium")
+                    );
+                  }}
+                />
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -149,7 +174,9 @@ console.log("DEBUG - aboutContent.image:", JSON.stringify(aboutContent?.image, n
       {advisoryMembers.length > 0 && (
         <section className="py-16 bg-gray-50 dark:bg-gray-900">
           <div className="max-w-screen-xl mx-auto px-4 text-center">
-            <h2 className="text-3xl font-bold font-[playfair] mb-8">Advisory Committee</h2>
+            <h2 className="text-3xl font-bold font-[playfair] mb-8">
+              Advisory Committee
+            </h2>
             <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-3">
               {advisoryMembers.map((member) => (
                 <div
@@ -174,12 +201,14 @@ console.log("DEBUG - aboutContent.image:", JSON.stringify(aboutContent?.image, n
       )}
 
       {/* Board */}
-      {boardMembers.length > 0 && (
+      {boardOnly.length > 0 && (
         <section className="py-16 bg-gray-50 dark:bg-gray-900">
           <div className="max-w-screen-xl mx-auto px-4 text-center">
-            <h2 className="text-3xl font-bold font-[playfair] mb-8">Our Board</h2>
+            <h2 className="text-3xl font-bold font-[playfair] mb-8">
+              Our Board of Directors
+            </h2>
             <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-3">
-              {boardMembers.map((member) => (
+              {boardOnly.map((member) => (
                 <Link
                   key={member.id}
                   href={`/board-members/${member.documentId}`}
@@ -196,7 +225,6 @@ console.log("DEBUG - aboutContent.image:", JSON.stringify(aboutContent?.image, n
                   </div>
                   <h3 className="text-lg font-semibold">{member.name}</h3>
                   <p className="text-orange-500">{member.position}</p>
-                  
                 </Link>
               ))}
             </div>
@@ -204,11 +232,43 @@ console.log("DEBUG - aboutContent.image:", JSON.stringify(aboutContent?.image, n
         </section>
       )}
 
+      {/* ✅ Information Officer */}
+      <section className="py-16 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
+        <div className="max-w-screen-md mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold font-[playfair] mb-6">
+            Information Officer
+          </h2>
+
+          {infoOfficer ? (
+            <div className="p-6 bg-white dark:bg-gray-800 rounded shadow hover:shadow-md transition text-center">
+              <div className="relative w-32 h-32 mx-auto mb-4">
+                <Image
+                  src={getStrapiMedia(infoOfficer.image)}
+                  alt={infoOfficer.name}
+                  fill
+                  className="rounded-full object-cover"
+                  unoptimized
+                />
+              </div>
+              <h3 className="text-xl font-semibold">{infoOfficer.name}</h3>
+              <p className="text-orange-500 mb-2">{infoOfficer.position}</p>
+              <p className="text-gray-700 dark:text-gray-300">
+                Contact: <span className="font-medium">+977-9800000000</span>
+              </p>
+            </div>
+          ) : (
+            <p className="text-gray-500 italic">Information Officer details not available.</p>
+          )}
+        </div>
+      </section>
+
       {/* Investments */}
       {investments.length > 0 && (
         <section className="py-16 bg-gray-50 dark:bg-gray-900">
           <div className="max-w-screen-xl mx-auto px-4 text-center">
-            <h2 className="text-3xl font-bold font-[playfair] mb-8">Our Investments</h2>
+            <h2 className="text-3xl font-bold font-[playfair] mb-8">
+              Our Investments
+            </h2>
             <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-3">
               {investments.map((investment) => (
                 <div
