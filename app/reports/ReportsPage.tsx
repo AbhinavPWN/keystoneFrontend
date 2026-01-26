@@ -1,36 +1,27 @@
 import Reports from "../components/Reports";
 import type { ReportItem, PaginationMeta } from "../types/reports";
 
-type StrapiResponse = {
+type ApiResponse = {
   data: ReportItem[];
   meta: {
     pagination: PaginationMeta;
   };
 };
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function ReportsPageContent() {
-  const baseUrl = process.env.NEXT_PUBLIC_CMS_URL || "http://135.181.66.188:8080";
-
   try {
     const res = await fetch(
-      `${baseUrl}/api/reports?pagination[page]=1&pagination[pageSize]=4&populate=File`,
-      {
-        next: { revalidate: 60 },
-      }
+      `${process.env.NEXT_PUBLIC_SITE_URL}/api/reports?pagination[page]=1&pagination[pageSize]=4`,
+      { cache: "no-store" }
     );
 
     if (!res.ok) {
-      console.error("Failed to fetch initial reports:", res.status);
-      return (
-        <div className="text-center py-10 text-red-500">
-          Failed to load reports. Please try again later.
-        </div>
-      );
+      throw new Error(`Failed to fetch reports: ${res.status}`);
     }
 
-    const json: StrapiResponse = await res.json();
+    const json: ApiResponse = await res.json();
 
     return (
       <Reports
@@ -39,10 +30,10 @@ export default async function ReportsPageContent() {
       />
     );
   } catch (error) {
-    console.error("Error fetching reports:", error);
+    console.error(error);
     return (
       <div className="text-center py-10 text-red-500">
-        Something went wrong while loading reports. Please try again later.
+        Failed to load reports. Please try again later.
       </div>
     );
   }

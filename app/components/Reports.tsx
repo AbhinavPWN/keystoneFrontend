@@ -39,9 +39,8 @@ export default function Reports({
       setError(null);
 
       try {
-        const res = await fetch(
-          `/api/reports?pagination[page]=${page}&pagination[pageSize]=${meta.pageSize}&populate=File`
-        );
+        const res = await fetch(`/api/reports?pagination[page]=${page}&pagination[pageSize]=${meta.pageSize}`);
+
         if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
 
         const json: {
