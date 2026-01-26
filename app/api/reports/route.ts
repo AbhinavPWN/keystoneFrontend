@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 
+/* =========================
+   STRAPI RESPONSE TYPES
+   ========================= */
+
 interface DescriptionChild {
   text: string;
   type: string;
@@ -18,25 +22,23 @@ interface FileAttributes {
   mime: string;
 }
 
-interface ReportAttributes {
+/**
+ * This matches YOUR Strapi response:
+ * - Flat fields (NO attributes wrapper)
+ * - populate=* already flattens relations
+ */
+interface StrapiReport {
+  id: number;
   title?: string | null;
   description?: DescriptionBlock[] | null;
   type?: string | null;
   datePublished?: string | null;
   publishedAt?: string | null;
-  File?: {
-    data?: {
-      id: number;
-      attributes: FileAttributes;
-    } | null;
-  } | null;
+  File?: FileAttributes | null;
 }
 
 interface StrapiResponse {
-  data: Array<{
-    id: number;
-    attributes?: ReportAttributes | null;
-  }> | null;
+  data: StrapiReport[] | null;
   meta: {
     pagination: {
       page: number;
@@ -47,6 +49,10 @@ interface StrapiResponse {
   };
 }
 
+/* =========================
+   FRONTEND SAFE SHAPE
+   ========================= */
+
 interface ProcessedReport {
   id: number;
   title: string;
@@ -55,6 +61,10 @@ interface ProcessedReport {
   datePublished: string | null;
   File: FileAttributes | null;
 }
+
+/* =========================
+   API HANDLER
+   ========================= */
 
 export async function GET(request: Request) {
   try {
@@ -72,19 +82,21 @@ export async function GET(request: Request) {
     const page = searchParams.get("pagination[page]") ?? "1";
     const pageSize = searchParams.get("pagination[pageSize]") ?? "4";
 
-    // ✅ SORT + FILTER AT STRAPI LEVEL
+    // ✅ SINGLE SOURCE OF TRUTH:
+    // Sorting + filtering happens ONLY in Strapi
     const strapiUrl =
-  `${CMS_URL}/api/reports` +
-  `?pagination[page]=${page}` +
-  `&pagination[pageSize]=${pageSize}` +
-  `&sort=datePublished:desc` +
-  `&filters[publishedAt][$notNull]=true` +
-  `&populate=*`;
-
+      `${CMS_URL}/api/reports` +
+      `?pagination[page]=${page}` +
+      `&pagination[pageSize]=${pageSize}` +
+      `&sort=datePublished:desc` +
+      `&filters[publishedAt][$notNull]=true` +
+      `&populate=*`;
 
     const response = await fetch(strapiUrl, {
-      headers: { "Content-Type": "application/json" },
       cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+      },
     });
 
     if (!response.ok) {
@@ -96,26 +108,22 @@ export async function GET(request: Request) {
     }
 
     const strapiResponse: StrapiResponse = await response.json();
-    const safeData = Array.isArray(strapiResponse.data)
+
+    const safeData: StrapiReport[] = Array.isArray(strapiResponse.data)
       ? strapiResponse.data
       : [];
 
-    const processedReports: ProcessedReport[] = safeData.map((item) => {
-      const attr = item.attributes ?? {};
-      const fileData = attr.File?.data?.attributes ?? null;
-
-      return {
-        id: item.id,
-        title: attr.title?.trim() || "Untitled Report",
-        description: Array.isArray(attr.description)
-          ? attr.description
-          : [],
-        type: attr.type ?? "Report",
-        // ✅ NEVER return fake strings for dates
-        datePublished: attr.datePublished ?? attr.publishedAt ?? null,
-        File: fileData,
-      };
-    });
+    const processedReports: ProcessedReport[] = safeData.map((item) => ({
+      id: item.id,
+      title: item.title?.trim() || "Untitled Report",
+      description: Array.isArray(item.description)
+        ? item.description
+        : [],
+      type: item.type ?? "Report",
+      // ✅ Never inject fake strings into dates
+      datePublished: item.datePublished ?? item.publishedAt ?? null,
+      File: item.File ?? null,
+    }));
 
     return NextResponse.json(
       {
@@ -125,7 +133,7 @@ export async function GET(request: Request) {
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error fetching reports:", error);
+    console.error("Reports API error:", error);
     return NextResponse.json(
       { data: [], meta: null },
       { status: 500 }
