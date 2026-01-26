@@ -12,15 +12,8 @@ export default function Reports({
   initialReports: ReportItem[];
   initialMeta: PaginationMeta;
 }) {
-  const [reports, setReports] = useState<ReportItem[]>(
-    // Sort initial reports by datePublished in descending order (newest first)
-    initialReports
-      ? [...initialReports].sort(
-          (a, b) =>
-            new Date(b.datePublished).getTime() - new Date(a.datePublished).getTime()
-        )
-      : []
-  );
+  const [reports, setReports] = useState<ReportItem[]>(initialReports ?? []);
+
   const [meta, setMeta] = useState<PaginationMeta>(
     initialMeta || { page: 1, pageCount: 1, total: 0, pageSize: 4 }
   );
@@ -57,14 +50,14 @@ export default function Reports({
         } = await res.json();
 
         // Sort fetched reports by datePublished in descending order
-        const sortedReports = json.data
-          ? [...json.data].sort(
-              (a, b) =>
-                new Date(b.datePublished).getTime() - new Date(a.datePublished).getTime()
-            )
-          : [];
+        // const sortedReports = json.data
+        //   ? [...json.data].sort(
+        //       (a, b) =>
+        //         new Date(b.datePublished).getTime() - new Date(a.datePublished).getTime()
+        //     )
+        //   : [];
 
-        setReports(sortedReports);
+        setReports(json.data ?? []);
         setMeta(json.meta?.pagination || meta);
       } catch (err) {
         console.error("Pagination fetch error:", err);
