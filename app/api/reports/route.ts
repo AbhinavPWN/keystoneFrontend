@@ -73,12 +73,14 @@ export async function GET(request: Request) {
     const pageSize = searchParams.get("pagination[pageSize]") ?? "4";
 
     // ✅ SORT + FILTER AT STRAPI LEVEL
-    const strapiUrl = `${CMS_URL}/api/reports
-      ?pagination[page]=${page}
-      &pagination[pageSize]=${pageSize}
-      &sort=publishedAt:desc
-      &filters[publishedAt][$notNull]=true
-      &populate=File`.replace(/\s+/g, "");
+    const strapiUrl =
+  `${CMS_URL}/api/reports` +
+  `?pagination[page]=${page}` +
+  `&pagination[pageSize]=${pageSize}` +
+  `&sort=datePublished:desc` +
+  `&filters[publishedAt][$notNull]=true` +
+  `&populate=*`;
+
 
     const response = await fetch(strapiUrl, {
       headers: { "Content-Type": "application/json" },
