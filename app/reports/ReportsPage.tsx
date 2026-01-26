@@ -13,9 +13,10 @@ export const dynamic = "force-dynamic";
 export default async function ReportsPageContent() {
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_SITE_URL}/api/reports?pagination[page]=1&pagination[pageSize]=4`,
-      { cache: "no-store" }
-    );
+  `/api/reports?pagination[page]=1&pagination[pageSize]=4`,
+  { cache: "no-store" }
+);
+
 
     if (!res.ok) {
       throw new Error(`Failed to fetch reports: ${res.status}`);
