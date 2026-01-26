@@ -23,7 +23,6 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
-
 export default function ReportsPage() {
   return (
     <Suspense fallback={<ReportsSkeleton />}>
@@ -33,3 +32,4 @@ export default function ReportsPage() {
     </Suspense>
   );
 }
+
