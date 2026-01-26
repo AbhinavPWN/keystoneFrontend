@@ -20,7 +20,7 @@ interface FileAttributes {
 
 interface ReportAttributes {
   title: string;
-  description: DescriptionBlock[];
+  description: DescriptionBlock[] | null;
   type: string;
   datePublished: string;
   File: FileAttributes | null;
@@ -30,7 +30,7 @@ interface StrapiResponse {
   data: Array<{
     id: number;
     attributes: ReportAttributes;
-  }>;
+  }> | null;
   meta: {
     pagination: {
       page: number;
@@ -47,15 +47,19 @@ interface ProcessedReport {
   description: DescriptionBlock[];
   type: string;
   datePublished: string;
-  File: FileAttributes | null; // Align with ReportItem type
+  File: FileAttributes | null;
 }
 
 export async function GET(request: Request) {
   try {
     const CMS_URL = process.env.NEXT_PUBLIC_CMS_URL;
+
     if (!CMS_URL) {
       console.error('CMS URL is not defined.');
-      return NextResponse.json({ error: 'CMS URL not configured' }, { status: 500 });
+      return NextResponse.json(
+        { data: [], meta: null },
+        { status: 500 }
+      );
     }
 
     const { searchParams } = new URL(request.url);
@@ -72,35 +76,49 @@ export async function GET(request: Request) {
       }
     );
 
+    // 🔹 CHANGE #1: Do NOT throw on non-200
     if (!response.ok) {
-      throw new Error(`Failed to fetch reports: ${response.statusText}`);
+      console.error('Strapi response not OK:', response.status);
+      return NextResponse.json(
+        { data: [], meta: null },
+        { status: response.status }
+      );
     }
 
     const strapiResponse: StrapiResponse = await response.json();
 
-    const processedReports: ProcessedReport[] = strapiResponse.data.map((item) => {
-      const { id, attributes } = item;
-      const { title, description, type, datePublished, File } = attributes;
+    // 🔹 CHANGE #2: Defensive guard for pagination edge cases
+    const safeData = Array.isArray(strapiResponse.data)
+      ? strapiResponse.data
+      : [];
 
-      console.log(`Report ID ${id} File data:`, File);
+    const processedReports: ProcessedReport[] = safeData.map((item) => {
+      const { id, attributes } = item;
 
       return {
         id,
-        title,
-        description,
-        type,
-        datePublished,
-        File, // Pass the File object directly
+        title: attributes?.title ?? '',
+        description: attributes?.description ?? [],
+        type: attributes?.type ?? '',
+        datePublished: attributes?.datePublished ?? '',
+        File: attributes?.File ?? null,
       };
     });
 
-    return NextResponse.json({
-      data: processedReports,
-      meta: strapiResponse.meta,
-    }, { status: 200 });
-
+    return NextResponse.json(
+      {
+        data: processedReports,
+        meta: strapiResponse.meta,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Error fetching reports:', error);
-    return NextResponse.json({ error: 'Failed to fetch reports' }, { status: 500 });
+
+    // 🔹 CHANGE #3: Always return safe structure
+    return NextResponse.json(
+      { data: [], meta: null },
+      { status: 500 }
+    );
   }
 }
