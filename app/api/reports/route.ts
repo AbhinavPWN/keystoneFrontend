@@ -19,17 +19,18 @@ interface FileAttributes {
 }
 
 interface ReportAttributes {
-  title: string;
-  description: DescriptionBlock[] | null;
-  type: string;
-  datePublished: string;
-  File: FileAttributes | null;
+  title?: string | null;
+  description?: DescriptionBlock[] | null;
+  type?: string | null;
+  datePublished?: string | null;
+  publishedAt?: string | null; // 🔹 Added fallback if datePublished missing
+  File?: FileAttributes | null;
 }
 
 interface StrapiResponse {
   data: Array<{
     id: number;
-    attributes: ReportAttributes;
+    attributes?: ReportAttributes | null;
   }> | null;
   meta: {
     pagination: {
@@ -56,10 +57,7 @@ export async function GET(request: Request) {
 
     if (!CMS_URL) {
       console.error('CMS URL is not defined.');
-      return NextResponse.json(
-        { data: [], meta: null },
-        { status: 500 }
-      );
+      return NextResponse.json({ data: [], meta: null }, { status: 500 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -68,57 +66,38 @@ export async function GET(request: Request) {
 
     const response = await fetch(
       `${CMS_URL}/api/reports?pagination[page]=${page}&pagination[pageSize]=${pageSize}&populate=File`,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        cache: 'no-store',
-      }
+      { headers: { 'Content-Type': 'application/json' }, cache: 'no-store' }
     );
 
-    // 🔹 CHANGE #1: Do NOT throw on non-200
+    // 🔹 Safe guard for non-OK response
     if (!response.ok) {
       console.error('Strapi response not OK:', response.status);
-      return NextResponse.json(
-        { data: [], meta: null },
-        { status: response.status }
-      );
+      return NextResponse.json({ data: [], meta: null }, { status: response.status });
     }
 
     const strapiResponse: StrapiResponse = await response.json();
 
-    // 🔹 CHANGE #2: Defensive guard for pagination edge cases
-    const safeData = Array.isArray(strapiResponse.data)
-      ? strapiResponse.data
-      : [];
+    // 🔹 Ensure we always have an array
+    const safeData = Array.isArray(strapiResponse.data) ? strapiResponse.data : [];
 
     const processedReports: ProcessedReport[] = safeData.map((item) => {
-      const { id, attributes } = item;
+      const attr = item.attributes ?? {};
 
+      // 🔹 Fallbacks for missing data
       return {
-        id,
-        title: attributes?.title ?? '',
-        description: attributes?.description ?? [],
-        type: attributes?.type ?? '',
-        datePublished: attributes?.datePublished ?? '',
-        File: attributes?.File ?? null,
+        id: item.id,
+        title: attr.title ?? 'Untitled Report', // Default title
+        description: attr.description ?? [], // Always an array
+        type: attr.type ?? 'Report',
+        datePublished: attr.datePublished || attr.publishedAt || 'Unknown date', // 🔹 fallback
+        File: attr.File ?? null,
       };
     });
 
-    return NextResponse.json(
-      {
-        data: processedReports,
-        meta: strapiResponse.meta,
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({ data: processedReports, meta: strapiResponse.meta }, { status: 200 });
+
   } catch (error) {
     console.error('Error fetching reports:', error);
-
-    // 🔹 CHANGE #3: Always return safe structure
-    return NextResponse.json(
-      { data: [], meta: null },
-      { status: 500 }
-    );
+    return NextResponse.json({ data: [], meta: null }, { status: 500 });
   }
 }
