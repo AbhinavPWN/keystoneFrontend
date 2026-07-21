@@ -102,8 +102,8 @@ export default function Navbar() {
         {/* Logo */}
         <Link href="/" className="flex-shrink-0 flex items-center h-full px-2 md:px-0">
           <Image
-            src="/Company_Logo.png"
-            alt="Keystone Logo"
+            src="/keystone_logo_new_1.png"
+            alt="Keystone Holdings Logo"
             width={200}
             height={50}
             priority
@@ -217,7 +217,7 @@ export default function Navbar() {
           <div className="absolute right-0 top-0 h-full w-64 bg-gray-800 text-white p-4 flex flex-col transform transition-transform duration-300" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
               <Link href="/" onClick={() => setMobileOpen(false)}>
-                <Image src="/Company_Logo.png" alt="Keystone Logo" width={200} height={50} className="object-contain h-12 w-auto" />
+                <Image  src="/keystone_logo_new_1.png" alt="Keystone Logo" width={200} height={50} className="object-contain h-12 w-auto" />
               </Link>
               <button onClick={() => setMobileOpen(false)} className="p-2 rounded hover:bg-blue-800 text-white">✖</button>
             </div>
